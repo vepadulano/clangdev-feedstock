@@ -43,6 +43,8 @@ source:
 build:
   number: {{ build_number }}
   skip: true  # [(win and vc<14) or variant=="hcc"]
+  script_env:
+    {% if "ROOT_CONDA_BUILD_TYPE" in os.environ %}- ROOT_CONDA_BUILD_TYPE {%- endif %}
 
 requirements:
   build:
