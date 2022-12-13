@@ -27,6 +27,7 @@ source:
       - patches/0007-Only-error-on-undefined-TARGET_OS_OSX.patch  # [osx and x86_64]
       #- patches/amd-roc-2.7.0.diff   # [variant != "hcc"]
       #- patches/amd-roc-hcc-2.7.0.diff  # [variant == "hcc"]
+      - patches/root/0001-Attempt-to-extract-clang-patches-from-ROOT.patch  # [variant == "root"]
     folder: .
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/clang-tools-extra-{{ version.replace(".rc", "rc") }}.src.tar.xz
     sha256: cc2bc8598848513fa2257a270083e986fd61048347eccf1d801926ea709392d0
