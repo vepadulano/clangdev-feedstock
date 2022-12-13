@@ -1,0 +1,549 @@
+From 60a47aacc3eece46b6ae697c6ec396032bd14cd7 Mon Sep 17 00:00:00 2001
+From: Chris Burr <christopher.burr@cern.ch>
+Date: Tue, 13 Dec 2022 13:54:31 +0100
+Subject: [PATCH 3/4] ROOT: libs 2
+
+---
+ lib/AST/ASTContext.cpp               | 13 ++--
+ lib/AST/ASTImporter.cpp              |  2 +-
+ lib/AST/DeclTemplate.cpp             | 89 +++++++++++++++++++++-------
+ lib/AST/ExternalASTSource.cpp        | 20 ++-----
+ lib/AST/ODRHash.cpp                  | 67 +++++++++++++--------
+ lib/AST/TemplateBase.cpp             |  8 ++-
+ lib/AST/TypePrinter.cpp              | 20 ++++++-
+ lib/Analysis/CFG.cpp                 | 34 +----------
+ lib/Analysis/UninitializedValues.cpp | 26 +++-----
+ 9 files changed, 164 insertions(+), 115 deletions(-)
+
+diff --git a/lib/AST/ASTContext.cpp b/lib/AST/ASTContext.cpp
+index 0e163f31..00ec96ab 100644
+--- a/lib/AST/ASTContext.cpp
++++ b/lib/AST/ASTContext.cpp
+@@ -4597,9 +4597,13 @@ QualType ASTContext::getAttributedType(attr::Kind attrKind,
+ /// Retrieve a substitution-result type.
+ QualType
+ ASTContext::getSubstTemplateTypeParmType(const TemplateTypeParmType *Parm,
+-                                         QualType Replacement) const {
+-  assert(Replacement.isCanonical()
+-         && "replacement types must always be canonical");
++                                         QualType Replacement,
++                                         bool AllowNonCanonical /* = false */
++                                        ) const {
++  if (!AllowNonCanonical) {
++     assert(Replacement.isCanonical()
++            && "replacement types must always be canonical");
++  }
+ 
+   llvm::FoldingSetNodeID ID;
+   SubstTemplateTypeParmType::Profile(ID, Parm, Replacement);
+@@ -4609,7 +4613,8 @@ ASTContext::getSubstTemplateTypeParmType(const TemplateTypeParmType *Parm,
+ 
+   if (!SubstParm) {
+     SubstParm = new (*this, TypeAlignment)
+-      SubstTemplateTypeParmType(Parm, Replacement);
++      SubstTemplateTypeParmType(Parm, Replacement,
++                                Replacement.getCanonicalType());
+     Types.push_back(SubstParm);
+     SubstTemplateTypeParmTypes.InsertNode(SubstParm, InsertPos);
+   }
+diff --git a/lib/AST/ASTImporter.cpp b/lib/AST/ASTImporter.cpp
+index 787e0202..4a303b8d 100644
+--- a/lib/AST/ASTImporter.cpp
++++ b/lib/AST/ASTImporter.cpp
+@@ -9029,7 +9029,7 @@ Expected<FileID> ASTImporter::Import(FileID FromID, bool IsBuiltin) {
+       // FIXME: We want to re-use the existing MemoryBuffer!
+       llvm::Optional<llvm::MemoryBufferRef> FromBuf =
+           Cache->getBufferOrNone(FromContext.getDiagnostics(),
+-                                 FromSM.getFileManager(), SourceLocation{});
++                                 FromFileManager, SourceLocation{});
+       if (!FromBuf)
+         return llvm::make_error<ImportError>(ImportError::Unknown);
+ 
+diff --git a/lib/AST/DeclTemplate.cpp b/lib/AST/DeclTemplate.cpp
+index ec8b00a9..4b1ea6da 100644
+--- a/lib/AST/DeclTemplate.cpp
++++ b/lib/AST/DeclTemplate.cpp
+@@ -20,6 +20,8 @@
+ #include "clang/AST/TemplateBase.h"
+ #include "clang/AST/TemplateName.h"
+ #include "clang/AST/Type.h"
++#include "clang/AST/ODRHash.h"
++#include "clang/AST/ExprCXX.h"
+ #include "clang/AST/TypeLoc.h"
+ #include "clang/Basic/Builtins.h"
+ #include "clang/Basic/LLVM.h"
+@@ -280,19 +282,48 @@ RedeclarableTemplateDecl::CommonBase *RedeclarableTemplateDecl::getCommonPtr() c
+   return Common;
+ }
+ 
+-void RedeclarableTemplateDecl::loadLazySpecializationsImpl() const {
++void RedeclarableTemplateDecl::loadLazySpecializationsImpl(
++                                             bool OnlyPartial/*=false*/) const {
+   // Grab the most recent declaration to ensure we've loaded any lazy
+   // redeclarations of this template.
+   CommonBase *CommonBasePtr = getMostRecentDecl()->getCommonPtr();
+-  if (CommonBasePtr->LazySpecializations) {
+-    ASTContext &Context = getASTContext();
+-    uint32_t *Specs = CommonBasePtr->LazySpecializations;
+-    CommonBasePtr->LazySpecializations = nullptr;
+-    for (uint32_t I = 0, N = *Specs++; I != N; ++I)
+-      (void)Context.getExternalSource()->GetExternalDecl(Specs[I]);
++  if (auto *Specs = CommonBasePtr->LazySpecializations) {
++    if (!OnlyPartial)
++      CommonBasePtr->LazySpecializations = nullptr;
++    for (uint32_t I = 0, N = Specs[0].DeclID; I != N; ++I) {
++      // Skip over already loaded specializations.
++      if (!Specs[I+1].ODRHash)
++        continue;
++      if (!OnlyPartial || Specs[I+1].IsPartial)
++        (void)loadLazySpecializationImpl(Specs[I+1]);
++    }
+   }
+ }
+ 
++Decl *RedeclarableTemplateDecl::loadLazySpecializationImpl(
++                                   LazySpecializationInfo &LazySpecInfo) const {
++  uint32_t ID = LazySpecInfo.DeclID;
++  assert(ID && "Loading already loaded specialization!");
++  // Note that we loaded the specialization.
++  LazySpecInfo.DeclID = LazySpecInfo.ODRHash = LazySpecInfo.IsPartial = 0;
++  return getASTContext().getExternalSource()->GetExternalDecl(ID);
++}
++
++bool
++RedeclarableTemplateDecl::loadLazySpecializationsImpl(ArrayRef<TemplateArgument>
++                                                      Args,
++                                                      TemplateParameterList *TPL) const {
++  bool LoadedSpecialization = false;
++  CommonBase *CommonBasePtr = getMostRecentDecl()->getCommonPtr();
++  if (auto *Specs = CommonBasePtr->LazySpecializations) {
++    unsigned Hash = TemplateArgumentList::ComputeODRHash(Args);
++    for (uint32_t I = 0, N = Specs[0].DeclID; I != N; ++I)
++      if (Specs[I+1].ODRHash && Specs[I+1].ODRHash == Hash)
++        LoadedSpecialization |= (bool)loadLazySpecializationImpl(Specs[I+1]);
++  }
++  return LoadedSpecialization;
++}
++
+ template<class EntryType, typename... ProfileArguments>
+ typename RedeclarableTemplateDecl::SpecEntryTraits<EntryType>::DeclType *
+ RedeclarableTemplateDecl::findSpecializationImpl(
+@@ -300,6 +331,8 @@ RedeclarableTemplateDecl::findSpecializationImpl(
+     ProfileArguments&&... ProfileArgs) {
+   using SETraits = SpecEntryTraits<EntryType>;
+ 
++  (void)loadLazySpecializationsImpl(std::forward<ProfileArguments>(ProfileArgs)...);
++
+   llvm::FoldingSetNodeID ID;
+   EntryType::Profile(ID, std::forward<ProfileArguments>(ProfileArgs)...,
+                      getASTContext());
+@@ -315,10 +348,11 @@ void RedeclarableTemplateDecl::addSpecializationImpl(
+ 
+   if (InsertPos) {
+ #ifndef NDEBUG
++    auto Args = SETraits::getTemplateArgs(Entry);
++    assert(!loadLazySpecializationsImpl(Args) &&
++           "Specialization is already registered as lazy");
+     void *CorrectInsertPos;
+-    assert(!findSpecializationImpl(Specializations,
+-                                   CorrectInsertPos,
+-                                   SETraits::getTemplateArgs(Entry)) &&
++    assert(!findSpecializationImpl(Specializations, CorrectInsertPos, Args) &&
+            InsertPos == CorrectInsertPos &&
+            "given incorrect InsertPos for specialization");
+ #endif
+@@ -375,12 +409,14 @@ FunctionTemplateDecl::getSpecializations() const {
+ FunctionDecl *
+ FunctionTemplateDecl::findSpecialization(ArrayRef<TemplateArgument> Args,
+                                          void *&InsertPos) {
+-  return findSpecializationImpl(getSpecializations(), InsertPos, Args);
++  auto *Common = getCommonPtr();
++  return findSpecializationImpl(Common->Specializations, InsertPos, Args);
+ }
+ 
+ void FunctionTemplateDecl::addSpecialization(
+       FunctionTemplateSpecializationInfo *Info, void *InsertPos) {
+-  addSpecializationImpl<FunctionTemplateDecl>(getSpecializations(), Info,
++  auto *Common = getCommonPtr();
++  addSpecializationImpl<FunctionTemplateDecl>(Common->Specializations, Info,
+                                               InsertPos);
+ }
+ 
+@@ -455,8 +491,9 @@ ClassTemplateDecl *ClassTemplateDecl::CreateDeserialized(ASTContext &C,
+                                        DeclarationName(), nullptr, nullptr);
+ }
+ 
+-void ClassTemplateDecl::LoadLazySpecializations() const {
+-  loadLazySpecializationsImpl();
++void ClassTemplateDecl::LoadLazySpecializations(
++                                             bool OnlyPartial/*=false*/) const {
++  loadLazySpecializationsImpl(OnlyPartial);
+ }
+ 
+ llvm::FoldingSetVector<ClassTemplateSpecializationDecl> &
+@@ -467,7 +504,7 @@ ClassTemplateDecl::getSpecializations() const {
+ 
+ llvm::FoldingSetVector<ClassTemplatePartialSpecializationDecl> &
+ ClassTemplateDecl::getPartialSpecializations() const {
+-  LoadLazySpecializations();
++  LoadLazySpecializations(/*PartialOnly = */ true);
+   return getCommonPtr()->PartialSpecializations;
+ }
+ 
+@@ -486,7 +523,9 @@ ClassTemplateDecl::findSpecialization(ArrayRef<TemplateArgument> Args,
+ 
+ void ClassTemplateDecl::AddSpecialization(ClassTemplateSpecializationDecl *D,
+                                           void *InsertPos) {
+-  addSpecializationImpl<ClassTemplateDecl>(getSpecializations(), D, InsertPos);
++  auto *Common = getCommonPtr();
++  addSpecializationImpl<ClassTemplateDecl>(Common->Specializations, D,
++                                           InsertPos);
+ }
+ 
+ ClassTemplatePartialSpecializationDecl *
+@@ -866,6 +905,14 @@ TemplateArgumentList::CreateCopy(ASTContext &Context,
+   return new (Mem) TemplateArgumentList(Args);
+ }
+ 
++unsigned TemplateArgumentList::ComputeODRHash(ArrayRef<TemplateArgument> Args) {
++  ODRHash Hasher;
++  for (TemplateArgument TA : Args)
++    Hasher.AddTemplateArgument(TA);
++
++  return Hasher.CalculateHash();
++}
++
+ FunctionTemplateSpecializationInfo *FunctionTemplateSpecializationInfo::Create(
+     ASTContext &C, FunctionDecl *FD, FunctionTemplateDecl *Template,
+     TemplateSpecializationKind TSK, const TemplateArgumentList *TemplateArgs,
+@@ -1161,8 +1208,9 @@ VarTemplateDecl *VarTemplateDecl::CreateDeserialized(ASTContext &C,
+                                      DeclarationName(), nullptr, nullptr);
+ }
+ 
+-void VarTemplateDecl::LoadLazySpecializations() const {
+-  loadLazySpecializationsImpl();
++void VarTemplateDecl::LoadLazySpecializations(
++                                             bool OnlyPartial/*=false*/) const {
++  loadLazySpecializationsImpl(OnlyPartial);
+ }
+ 
+ llvm::FoldingSetVector<VarTemplateSpecializationDecl> &
+@@ -1173,7 +1221,7 @@ VarTemplateDecl::getSpecializations() const {
+ 
+ llvm::FoldingSetVector<VarTemplatePartialSpecializationDecl> &
+ VarTemplateDecl::getPartialSpecializations() const {
+-  LoadLazySpecializations();
++  LoadLazySpecializations(/*PartialOnly = */ true);
+   return getCommonPtr()->PartialSpecializations;
+ }
+ 
+@@ -1192,7 +1240,8 @@ VarTemplateDecl::findSpecialization(ArrayRef<TemplateArgument> Args,
+ 
+ void VarTemplateDecl::AddSpecialization(VarTemplateSpecializationDecl *D,
+                                         void *InsertPos) {
+-  addSpecializationImpl<VarTemplateDecl>(getSpecializations(), D, InsertPos);
++  auto *Common = getCommonPtr();
++  addSpecializationImpl<VarTemplateDecl>(Common->Specializations, D, InsertPos);
+ }
+ 
+ VarTemplatePartialSpecializationDecl *
+diff --git a/lib/AST/ExternalASTSource.cpp b/lib/AST/ExternalASTSource.cpp
+index 25783318..754bbb9b 100644
+--- a/lib/AST/ExternalASTSource.cpp
++++ b/lib/AST/ExternalASTSource.cpp
+@@ -30,6 +30,10 @@ char ExternalASTSource::ID;
+ 
+ ExternalASTSource::~ExternalASTSource() = default;
+ 
++uint32_t ExternalASTSource::getGeneration(const ASTContext &C) const {
++  return C.getGeneration();
++}
++
+ llvm::Optional<ASTSourceDescriptor>
+ ExternalASTSource::getSourceDescriptor(unsigned ID) {
+   return None;
+@@ -109,19 +113,5 @@ void ExternalASTSource::FindExternalLexicalDecls(
+ void ExternalASTSource::getMemoryBufferSizes(MemoryBufferSizes &sizes) const {}
+ 
+ uint32_t ExternalASTSource::incrementGeneration(ASTContext &C) {
+-  uint32_t OldGeneration = CurrentGeneration;
+-
+-  // Make sure the generation of the topmost external source for the context is
+-  // incremented. That might not be us.
+-  auto *P = C.getExternalSource();
+-  if (P && P != this)
+-    CurrentGeneration = P->incrementGeneration(C);
+-  else {
+-    // FIXME: Only bump the generation counter if the current generation number
+-    // has been observed?
+-    if (!++CurrentGeneration)
+-      llvm::report_fatal_error("generation counter overflowed", false);
+-  }
+-
+-  return OldGeneration;
++  return C.incrementGeneration();
+ }
+diff --git a/lib/AST/ODRHash.cpp b/lib/AST/ODRHash.cpp
+index 735bcff8..174ba52a 100644
+--- a/lib/AST/ODRHash.cpp
++++ b/lib/AST/ODRHash.cpp
+@@ -157,32 +157,34 @@ void ODRHash::AddTemplateName(TemplateName Name) {
+ void ODRHash::AddTemplateArgument(TemplateArgument TA) {
+   const auto Kind = TA.getKind();
+   ID.AddInteger(Kind);
+-
+   switch (Kind) {
+-    case TemplateArgument::Null:
+-      llvm_unreachable("Expected valid TemplateArgument");
+-    case TemplateArgument::Type:
+-      AddQualType(TA.getAsType());
+-      break;
+-    case TemplateArgument::Declaration:
+-      AddDecl(TA.getAsDecl());
+-      break;
+-    case TemplateArgument::NullPtr:
+-    case TemplateArgument::Integral:
+-      break;
+-    case TemplateArgument::Template:
+-    case TemplateArgument::TemplateExpansion:
+-      AddTemplateName(TA.getAsTemplateOrTemplatePattern());
+-      break;
+-    case TemplateArgument::Expression:
+-      AddStmt(TA.getAsExpr());
+-      break;
+-    case TemplateArgument::Pack:
+-      ID.AddInteger(TA.pack_size());
+-      for (auto SubTA : TA.pack_elements()) {
+-        AddTemplateArgument(SubTA);
+-      }
+-      break;
++  case TemplateArgument::Null:
++    llvm_unreachable("Require valid TemplateArgument");
++  case TemplateArgument::Type:
++    AddQualType(TA.getAsType());
++    break;
++  case TemplateArgument::Declaration:
++    AddDecl(TA.getAsDecl());
++    break;
++  case TemplateArgument::NullPtr:
++    AddQualType(TA.getNullPtrType());
++    break;
++  case TemplateArgument::Integral:
++    TA.getAsIntegral().Profile(ID);
++    AddQualType(TA.getIntegralType());
++    break;
++  case TemplateArgument::Template:
++  case TemplateArgument::TemplateExpansion:
++    AddTemplateName(TA.getAsTemplateOrTemplatePattern());
++    break;
++  case TemplateArgument::Expression:
++    AddStmt(TA.getAsExpr());
++    break;
++  case TemplateArgument::Pack:
++    ID.AddInteger(TA.pack_size());
++    for (auto SubTA : TA.pack_elements())
++      AddTemplateArgument(SubTA);
++    break;
+   }
+ }
+ 
+@@ -649,6 +651,21 @@ void ODRHash::AddDecl(const Decl *D) {
+     for (const TemplateArgument &TA : List.asArray())
+       AddTemplateArgument(TA);
+   }
++
++  // If this was a specialization we should take into account its template
++  // arguments. This helps to reduce collisions coming when visiting template
++  // specialization types (eg. when processing type template arguments).
++  ArrayRef<TemplateArgument> Args;
++  if (auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(D))
++    Args = CTSD->getTemplateArgs().asArray();
++  else if (auto *VTSD = dyn_cast<VarTemplateSpecializationDecl>(D))
++    Args = VTSD->getTemplateArgs().asArray();
++  else if (auto *FD = dyn_cast<FunctionDecl>(D))
++    if (FD->getTemplateSpecializationArgs())
++      Args = FD->getTemplateSpecializationArgs()->asArray();
++
++  for (auto &TA : Args)
++    AddTemplateArgument(TA);
+ }
+ 
+ namespace {
+diff --git a/lib/AST/TemplateBase.cpp b/lib/AST/TemplateBase.cpp
+index f44230d1..72dadd2f 100644
+--- a/lib/AST/TemplateBase.cpp
++++ b/lib/AST/TemplateBase.cpp
+@@ -130,8 +130,14 @@ static void printIntegral(const TemplateArgument &TemplArg, raw_ostream &Out,
+     } else
+       Out << "(" << T->getCanonicalTypeInternal().getAsString(Policy) << ")"
+           << Val;
+-  } else
++  } else {
+     Out << Val;
++    // Handle cases where the value is too large to fit into the underlying type
++    // i.e. where the unsignedness matters.
++    if (T->isBuiltinType())
++      if (Val.isUnsigned() && Val.getBitWidth() == 64 && Val.countLeadingOnes())
++        Out << "ull";
++  }
+ }
+ 
+ static unsigned getArrayDepth(QualType type) {
+diff --git a/lib/AST/TypePrinter.cpp b/lib/AST/TypePrinter.cpp
+index 5de22f76..8cd25dc6 100644
+--- a/lib/AST/TypePrinter.cpp
++++ b/lib/AST/TypePrinter.cpp
+@@ -80,6 +80,21 @@ namespace {
+     }
+   };
+ 
++  class DefaultTemplateArgsPolicyRAII {
++    PrintingPolicy &Policy;
++    bool Old;
++
++  public:
++    explicit DefaultTemplateArgsPolicyRAII(PrintingPolicy &Policy)
++        : Policy(Policy), Old(Policy.SuppressDefaultTemplateArgs) {
++      Policy.SuppressDefaultTemplateArgs = false;
++    }
++
++    ~DefaultTemplateArgsPolicyRAII() {
++      Policy.SuppressDefaultTemplateArgs = Old;
++    }
++  };
++
+   class ElaboratedTypePolicyRAII {
+     PrintingPolicy &Policy;
+     bool SuppressTagKeyword;
+@@ -1442,6 +1457,7 @@ void TypePrinter::printTemplateId(const TemplateSpecializationType *T,
+   IncludeStrongLifetimeRAII Strong(Policy);
+ 
+   TemplateDecl *TD = T->getTemplateName().getAsTemplateDecl();
++  // FIXME: Null TD never excercised in test suite.
+   if (FullyQualify && TD) {
+     if (!Policy.SuppressScope)
+       AppendScope(TD->getDeclContext(), OS, TD->getDeclName());
+@@ -1452,7 +1468,9 @@ void TypePrinter::printTemplateId(const TemplateSpecializationType *T,
+     T->getTemplateName().print(OS, Policy);
+   }
+ 
+-  printTemplateArgumentList(OS, T->template_arguments(), Policy);
++  DefaultTemplateArgsPolicyRAII TemplateArgs(Policy);
++  const TemplateParameterList *TPL = TD ? TD->getTemplateParameters() : nullptr;
++  printTemplateArgumentList(OS, T->template_arguments(), Policy, TPL);
+   spaceBeforePlaceHolder(OS);
+ }
+ 
+diff --git a/lib/Analysis/CFG.cpp b/lib/Analysis/CFG.cpp
+index 87c2f6f9..ba5eceda 100644
+--- a/lib/Analysis/CFG.cpp
++++ b/lib/Analysis/CFG.cpp
+@@ -542,7 +542,6 @@ private:
+   // Visitors to walk an AST and construct the CFG.
+   CFGBlock *VisitInitListExpr(InitListExpr *ILE, AddStmtChoice asc);
+   CFGBlock *VisitAddrLabelExpr(AddrLabelExpr *A, AddStmtChoice asc);
+-  CFGBlock *VisitAttributedStmt(AttributedStmt *A, AddStmtChoice asc);
+   CFGBlock *VisitBinaryOperator(BinaryOperator *B, AddStmtChoice asc);
+   CFGBlock *VisitBreakStmt(BreakStmt *B);
+   CFGBlock *VisitCallExpr(CallExpr *C, AddStmtChoice asc);
+@@ -2150,9 +2149,6 @@ CFGBlock *CFGBuilder::Visit(Stmt * S, AddStmtChoice asc,
+     case Stmt::InitListExprClass:
+       return VisitInitListExpr(cast<InitListExpr>(S), asc);
+ 
+-    case Stmt::AttributedStmtClass:
+-      return VisitAttributedStmt(cast<AttributedStmt>(S), asc);
+-
+     case Stmt::AddrLabelExprClass:
+       return VisitAddrLabelExpr(cast<AddrLabelExpr>(S), asc);
+ 
+@@ -2402,32 +2398,8 @@ CFGBlock *CFGBuilder::VisitAddrLabelExpr(AddrLabelExpr *A,
+   return Block;
+ }
+ 
+-static bool isFallthroughStatement(const AttributedStmt *A) {
+-  bool isFallthrough = hasSpecificAttr<FallThroughAttr>(A->getAttrs());
+-  assert((!isFallthrough || isa<NullStmt>(A->getSubStmt())) &&
+-         "expected fallthrough not to have children");
+-  return isFallthrough;
+-}
+-
+-CFGBlock *CFGBuilder::VisitAttributedStmt(AttributedStmt *A,
+-                                          AddStmtChoice asc) {
+-  // AttributedStmts for [[likely]] can have arbitrary statements as children,
+-  // and the current visitation order here would add the AttributedStmts
+-  // for [[likely]] after the child nodes, which is undesirable: For example,
+-  // if the child contains an unconditional return, the [[likely]] would be
+-  // considered unreachable.
+-  // So only add the AttributedStmt for FallThrough, which has CFG effects and
+-  // also no children, and omit the others. None of the other current StmtAttrs
+-  // have semantic meaning for the CFG.
+-  if (isFallthroughStatement(A) && asc.alwaysAdd(*this, A)) {
+-    autoCreateBlock();
+-    appendStmt(Block, A);
+-  }
+-
+-  return VisitChildren(A);
+-}
+-
+-CFGBlock *CFGBuilder::VisitUnaryOperator(UnaryOperator *U, AddStmtChoice asc) {
++CFGBlock *CFGBuilder::VisitUnaryOperator(UnaryOperator *U,
++           AddStmtChoice asc) {
+   if (asc.alwaysAdd(*this, U)) {
+     autoCreateBlock();
+     appendStmt(Block, U);
+@@ -3361,7 +3333,7 @@ CFGBlock *CFGBuilder::VisitGCCAsmStmt(GCCAsmStmt *G, AddStmtChoice asc) {
+   // Save "Succ" in BackpatchBlocks. In the backpatch processing, "Succ" is
+   // used to avoid adding "Succ" again.
+   BackpatchBlocks.push_back(JumpSource(Succ, ScopePos));
+-  return VisitChildren(G);
++  return Block;
+ }
+ 
+ CFGBlock *CFGBuilder::VisitForStmt(ForStmt *F) {
+diff --git a/lib/Analysis/UninitializedValues.cpp b/lib/Analysis/UninitializedValues.cpp
+index 811146e5..67cd3972 100644
+--- a/lib/Analysis/UninitializedValues.cpp
++++ b/lib/Analysis/UninitializedValues.cpp
+@@ -591,8 +591,8 @@ public:
+ 
+         if (AtPredExit == MayUninitialized) {
+           // If the predecessor's terminator is an "asm goto" that initializes
+-          // the variable, then don't count it as "initialized" on the indirect
+-          // paths.
++          // the variable, then it won't be counted as "initialized" on the
++          // non-fallthrough paths.
+           CFGTerminator term = Pred->getTerminator();
+           if (const auto *as = dyn_cast_or_null<GCCAsmStmt>(term.getStmt())) {
+             const CFGBlock *fallthrough = *Pred->succ_begin();
+@@ -810,21 +810,13 @@ void TransferFunctions::VisitGCCAsmStmt(GCCAsmStmt *as) {
+   if (!as->isAsmGoto())
+     return;
+ 
+-  ASTContext &C = ac.getASTContext();
+-  for (const Expr *O : as->outputs()) {
+-    const Expr *Ex = stripCasts(C, O);
+-
+-    // Strip away any unary operators. Invalid l-values are reported by other
+-    // semantic analysis passes.
+-    while (const auto *UO = dyn_cast<UnaryOperator>(Ex))
+-      Ex = stripCasts(C, UO->getSubExpr());
+-
+-    // Mark the variable as potentially uninitialized for those cases where
+-    // it's used on an indirect path, where it's not guaranteed to be
+-    // defined.
+-    if (const VarDecl *VD = findVar(Ex).getDecl())
+-      vals[VD] = MayUninitialized;
+-  }
++  for (const Expr *o : as->outputs())
++    if (const VarDecl *VD = findVar(o).getDecl())
++      if (vals[VD] != Initialized)
++        // If the variable isn't initialized by the time we get here, then we
++        // mark it as potentially uninitialized for those cases where it's used
++        // on an indirect path, where it's not guaranteed to be defined.
++        vals[VD] = MayUninitialized;
+ }
+ 
+ void TransferFunctions::VisitObjCMessageExpr(ObjCMessageExpr *ME) {
+-- 
+2.34.1
+
