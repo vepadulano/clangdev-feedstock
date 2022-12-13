@@ -27,14 +27,9 @@ source:
       - patches/0007-Only-error-on-undefined-TARGET_OS_OSX.patch  # [osx and x86_64]
       #- patches/amd-roc-2.7.0.diff   # [variant != "hcc"]
       #- patches/amd-roc-hcc-2.7.0.diff  # [variant == "hcc"]
-      - patches/0002-clang-add-conda-specific-env-var-CONDA_BUILD_SYSROOT.patch
-      - patches/0003-clang-Fix-normalizeProgramName-s-handling-of-dots-ou.patch
-      - patches/0001-Set-VERSION-in-osx-as-well.patch
+      # - patches/0002-clang-add-conda-specific-env-var-CONDA_BUILD_SYSROOT.patch
       - patches/Improve-logic-for-finding-the-macos-sysroot-for-cond.patch  # [osx]
-      #- patches/cross-compile.diff
-      #- patches/apple-silicon.diff
       - patches/0008-Remove-trailing-null-bytes-from-the-sysroot-that-com.patch       # [variant and variant.startswith("root_")]
-      - patches/0009-Prefer-__vector-over-vector-keyword-for-altivec.patch
       #- patches/root/0001-Attempt-to-extract-clang-patches-from-ROOT.patch  # [variant == "root"]
       - patches/root/0001-ROOT-include-files.patch
       - patches/root/0002-ROOT-libs-1.patch
