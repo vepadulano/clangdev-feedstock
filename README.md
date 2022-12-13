@@ -34,10 +34,10 @@ Current build status
                 </a>
               </td>
             </tr><tr>
-              <td>linux_64_variantroot</td>
+              <td>linux_64_variantroot_master</td>
               <td>
                 <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=153&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_64_variantroot" alt="variant">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_64_variantroot_master" alt="variant">
                 </a>
               </td>
             </tr><tr>
@@ -48,10 +48,10 @@ Current build status
                 </a>
               </td>
             </tr><tr>
-              <td>linux_aarch64_variantroot</td>
+              <td>linux_aarch64_variantroot_master</td>
               <td>
                 <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=153&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_aarch64_variantroot" alt="variant">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_aarch64_variantroot_master" alt="variant">
                 </a>
               </td>
             </tr><tr>
@@ -62,10 +62,10 @@ Current build status
                 </a>
               </td>
             </tr><tr>
-              <td>linux_ppc64le_variantroot</td>
+              <td>linux_ppc64le_variantroot_master</td>
               <td>
                 <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=153&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_ppc64le_variantroot" alt="variant">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_ppc64le_variantroot_master" alt="variant">
                 </a>
               </td>
             </tr><tr>
@@ -76,10 +76,10 @@ Current build status
                 </a>
               </td>
             </tr><tr>
-              <td>osx_64_variantroot</td>
+              <td>osx_64_variantroot_master</td>
               <td>
                 <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=153&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=osx&configuration=osx%20osx_64_variantroot" alt="variant">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=osx&configuration=osx%20osx_64_variantroot_master" alt="variant">
                 </a>
               </td>
             </tr><tr>
@@ -90,10 +90,10 @@ Current build status
                 </a>
               </td>
             </tr><tr>
-              <td>osx_arm64_variantroot</td>
+              <td>osx_arm64_variantroot_master</td>
               <td>
                 <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=153&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=osx&configuration=osx%20osx_arm64_variantroot" alt="variant">
+                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/clangdev-feedstock?branchName=main&jobName=osx&configuration=osx%20osx_arm64_variantroot_master" alt="variant">
                 </a>
               </td>
             </tr><tr>
@@ -118,9 +118,6 @@ Current release info
 | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-clang-green.svg)](https://anaconda.org/conda-forge/clang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/clang.svg)](https://anaconda.org/conda-forge/clang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/clang.svg)](https://anaconda.org/conda-forge/clang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/clang.svg)](https://anaconda.org/conda-forge/clang) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-clang--13-green.svg)](https://anaconda.org/conda-forge/clang-13) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/clang-13.svg)](https://anaconda.org/conda-forge/clang-13) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/clang-13.svg)](https://anaconda.org/conda-forge/clang-13) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/clang-13.svg)](https://anaconda.org/conda-forge/clang-13) |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-clang--format-green.svg)](https://anaconda.org/conda-forge/clang-format) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/clang-format.svg)](https://anaconda.org/conda-forge/clang-format) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/clang-format.svg)](https://anaconda.org/conda-forge/clang-format) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/clang-format.svg)](https://anaconda.org/conda-forge/clang-format) |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-clang--format--13-green.svg)](https://anaconda.org/conda-forge/clang-format-13) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/clang-format-13.svg)](https://anaconda.org/conda-forge/clang-format-13) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/clang-format-13.svg)](https://anaconda.org/conda-forge/clang-format-13) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/clang-format-13.svg)](https://anaconda.org/conda-forge/clang-format-13) |
-| [![Conda Recipe](https://img.shields.io/badge/recipe-clang--tools-green.svg)](https://anaconda.org/conda-forge/clang-tools) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/clang-tools.svg)](https://anaconda.org/conda-forge/clang-tools) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/clang-tools.svg)](https://anaconda.org/conda-forge/clang-tools) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/clang-tools.svg)](https://anaconda.org/conda-forge/clang-tools) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-clangdev-green.svg)](https://anaconda.org/conda-forge/clangdev) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/clangdev.svg)](https://anaconda.org/conda-forge/clangdev) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/clangdev.svg)](https://anaconda.org/conda-forge/clangdev) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/clangdev.svg)](https://anaconda.org/conda-forge/clangdev) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-clangxx-green.svg)](https://anaconda.org/conda-forge/clangxx) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/clangxx.svg)](https://anaconda.org/conda-forge/clangxx) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/clangxx.svg)](https://anaconda.org/conda-forge/clangxx) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/clangxx.svg)](https://anaconda.org/conda-forge/clangxx) |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-libclang-green.svg)](https://anaconda.org/conda-forge/libclang) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/libclang.svg)](https://anaconda.org/conda-forge/libclang) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/libclang.svg)](https://anaconda.org/conda-forge/libclang) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/libclang.svg)](https://anaconda.org/conda-forge/libclang) |
@@ -138,16 +135,16 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-Once the `conda-forge` channel has been enabled, `clang, clang-13, clang-format, clang-format-13, clang-tools, clangdev, clangxx, libclang, libclang-cpp, libclang-cpp13, python-clang` can be installed with `conda`:
+Once the `conda-forge` channel has been enabled, `clang, clang-13, clangdev, clangxx, libclang, libclang-cpp, libclang-cpp13, python-clang` can be installed with `conda`:
 
 ```
-conda install clang clang-13 clang-format clang-format-13 clang-tools clangdev clangxx libclang libclang-cpp libclang-cpp13 python-clang
+conda install clang clang-13 clangdev clangxx libclang libclang-cpp libclang-cpp13 python-clang
 ```
 
 or with `mamba`:
 
 ```
-mamba install clang clang-13 clang-format clang-format-13 clang-tools clangdev clangxx libclang libclang-cpp libclang-cpp13 python-clang
+mamba install clang clang-13 clangdev clangxx libclang libclang-cpp libclang-cpp13 python-clang
 ```
 
 It is possible to list all of the versions of `clang` available on your platform with `conda`:
