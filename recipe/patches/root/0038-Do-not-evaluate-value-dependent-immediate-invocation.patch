@@ -1,0 +1,37 @@
+From 5531d64b4c9bfc8f6b618b1819d2e8e8a4e3c7d3 Mon Sep 17 00:00:00 2001
+From: Evgeny Shulgin <izaronplatz@gmail.com>
+Date: Fri, 25 Feb 2022 16:55:08 +0100
+Subject: [PATCH 38/73] Do not evaluate value-dependent immediate invocations
+
+Value-dependent ConstantExprs are not meant to be evaluated.
+There is an assert in Expr::EvaluateAsConstantExpr that ensures this condition.
+But before this patch the method was called without prior check.
+
+Fixes https://github.com/llvm/llvm-project/issues/52768
+
+Reviewed By: erichkeane
+
+Differential Revision: https://reviews.llvm.org/D119375
+---
+ clang/lib/Sema/SemaExpr.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/clang/lib/Sema/SemaExpr.cpp b/clang/lib/Sema/SemaExpr.cpp
+index 4179249e91de..44849f8582b4 100644
+--- a/clang/lib/Sema/SemaExpr.cpp
++++ b/clang/lib/Sema/SemaExpr.cpp
+@@ -16629,7 +16629,10 @@ ExprResult Sema::CheckForImmediateInvocation(ExprResult E, FunctionDecl *Decl) {
+       ConstantExpr::getStorageKind(Decl->getReturnType().getTypePtr(),
+                                    getASTContext()),
+       /*IsImmediateInvocation*/ true);
+-  ExprEvalContexts.back().ImmediateInvocationCandidates.emplace_back(Res, 0);
++  /// Value-dependent constant expressions should not be immediately
++  /// evaluated until they are instantiated.
++  if (!Res->isValueDependent())
++    ExprEvalContexts.back().ImmediateInvocationCandidates.emplace_back(Res, 0);
+   return Res;
+ }
+ 
+-- 
+2.41.0
+
