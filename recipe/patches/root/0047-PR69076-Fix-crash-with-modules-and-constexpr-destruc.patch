@@ -1,7 +1,7 @@
 From 790f7a1ca3d7da7a5a4a0793833b089ae931c260 Mon Sep 17 00:00:00 2001
 From: Jonas Hahnfeld <jonas.hahnfeld@cern.ch>
 Date: Sat, 14 Oct 2023 20:10:28 +0200
-Subject: [PATCH 47/74] PR69076: Fix crash with modules and constexpr
+Subject: [PATCH 47/75] PR69076: Fix crash with modules and constexpr
  destructor
 
 Closes https://github.com/llvm/llvm-project/issues/68702
@@ -105,5 +105,5 @@ index 000000000000..3f91a1001d1e
 +  static V<int> v(100);
 +}
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

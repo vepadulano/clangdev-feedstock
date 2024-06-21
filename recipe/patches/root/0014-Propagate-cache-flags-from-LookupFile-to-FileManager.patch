@@ -1,7 +1,7 @@
 From efc35d004db41a7bc1259ea352f6b3e99d9af24d Mon Sep 17 00:00:00 2001
 From: Axel Naumann <Axel.Naumann@cern.ch>
 Date: Tue, 15 Apr 2014 12:11:18 +0200
-Subject: [PATCH 14/74] Propagate cache flags from LookupFile() to
+Subject: [PATCH 14/75] Propagate cache flags from LookupFile() to
  FileManager::getFile().
 
 ---
@@ -120,5 +120,5 @@ index 114796b2eba1..72f2aa09f958 100644
      if (SuggestedModule && !LangOpts.AsmPreprocessor)
        HeaderInfo.getModuleMap().diagnoseHeaderInclusion(
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

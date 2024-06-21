@@ -1,7 +1,7 @@
 From 65881dc1b6fc6fce382102475d562ad37c8ee946 Mon Sep 17 00:00:00 2001
 From: Axel Naumann <Axel.Naumann@cern.ch>
 Date: Thu, 8 Jan 2015 18:29:58 +0100
-Subject: [PATCH 22/74] Also store Parser paren numbers; likely fixes
+Subject: [PATCH 22/75] Also store Parser paren numbers; likely fixes
  ROOT-6976:
 
 The parser (or rather the BalancedDelimiterTracker) was doing a Parser::cutOffParsing() because
@@ -32,5 +32,5 @@ index 9e405d15f76b..26b6815ce0c1 100644
    Preprocessor &PP;
  
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

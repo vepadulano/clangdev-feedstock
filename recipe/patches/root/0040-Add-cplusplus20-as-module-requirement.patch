@@ -1,7 +1,7 @@
 From 39b19398f5ad58df0193fa4ed750f149c0b67493 Mon Sep 17 00:00:00 2001
 From: Axel Naumann <Axel.Naumann@cern.ch>
 Date: Fri, 9 Dec 2022 09:31:38 +0100
-Subject: [PATCH 40/74] Add "cplusplus20" as module requirement:
+Subject: [PATCH 40/75] Add "cplusplus20" as module requirement:
 
 This needs to be upstreamed.
 ---
@@ -21,5 +21,5 @@ index 351da1a145f4..ff91ddcc880d 100644
                          .Case("c11", LangOpts.C11)
                          .Case("c17", LangOpts.C17)
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

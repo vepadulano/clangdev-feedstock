@@ -1,7 +1,7 @@
 From 798001985169680b5c49dd22b6ec6eb5043acac4 Mon Sep 17 00:00:00 2001
 From: Jonas Hahnfeld <jonas.hahnfeld@cern.ch>
 Date: Mon, 3 Jul 2023 10:42:23 +0200
-Subject: [PATCH 43/74] D154328: [AST] Add API to iterate already loaded
+Subject: [PATCH 43/75] D154328: [AST] Add API to iterate already loaded
  specializations
 
 These new functions allow to look at specializations without triggering
@@ -78,5 +78,5 @@ index cbaa287f225a..0132d052b08a 100644
    static bool classof(const Decl *D) { return classofKind(D->getKind()); }
    static bool classofKind(Kind K) { return K == VarTemplate; }
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

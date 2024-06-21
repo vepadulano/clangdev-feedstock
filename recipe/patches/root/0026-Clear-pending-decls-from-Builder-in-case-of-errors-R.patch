@@ -1,7 +1,7 @@
 From f19f0f96301a36761cfd95d6cbb1d38bd0e1cafa Mon Sep 17 00:00:00 2001
 From: Axel Naumann <Axel.Naumann@cern.ch>
 Date: Thu, 28 May 2015 11:43:50 +0200
-Subject: [PATCH 26/74] Clear pending decls from Builder in case of errors
+Subject: [PATCH 26/75] Clear pending decls from Builder in case of errors
  (ROOT-7295).
 
 ---
@@ -25,5 +25,5 @@ index aeccf768f7ef..3ea89fb17670 100644
      }
  
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

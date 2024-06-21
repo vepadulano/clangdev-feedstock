@@ -1,7 +1,7 @@
 From 9d967a90a0a8198dd1d9aaa80577963203c461f1 Mon Sep 17 00:00:00 2001
 From: Axel Naumann <Axel.Naumann@cern.ch>
 Date: Fri, 9 Sep 2016 16:58:55 +0200
-Subject: [PATCH 30/74] Keep the collection of EmittedDeferredDecls for
+Subject: [PATCH 30/75] Keep the collection of EmittedDeferredDecls for
  subsequent transactions.
 
 ---
@@ -204,5 +204,5 @@ index 3ea89fb17670..8bcb625882ff 100644
  llvm::Module *CodeGenerator::StartModule(llvm::StringRef ModuleName,
                                           llvm::LLVMContext& C,
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

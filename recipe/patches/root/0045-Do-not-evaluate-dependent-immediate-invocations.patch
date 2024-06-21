@@ -1,7 +1,7 @@
 From 44c8115f01a3ad95414edb24106906243d9f4688 Mon Sep 17 00:00:00 2001
 From: Utkarsh Saxena <usx@google.com>
 Date: Wed, 17 Aug 2022 16:44:41 +0200
-Subject: [PATCH 45/74] Do not evaluate dependent immediate invocations
+Subject: [PATCH 45/75] Do not evaluate dependent immediate invocations
 
 We deferred the evaluation of dependent immediate invocations in https://reviews.llvm.org/D119375 until instantiation.
 We should also not consider them referenced from a non-consteval context.
@@ -85,5 +85,5 @@ index ecf8c1e0f5bd..195362ccb376 100644
 +
 +} // namespace issue_55601
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

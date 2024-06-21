@@ -1,7 +1,7 @@
 From 867367ccd27cd073bc243a61080591743be6c9c5 Mon Sep 17 00:00:00 2001
 From: Evgeny Shulgin <izaronplatz@gmail.com>
 Date: Fri, 25 Feb 2022 16:55:08 +0100
-Subject: [PATCH 38/74] Do not evaluate value-dependent immediate invocations
+Subject: [PATCH 38/75] Do not evaluate value-dependent immediate invocations
 
 Value-dependent ConstantExprs are not meant to be evaluated.
 There is an assert in Expr::EvaluateAsConstantExpr that ensures this condition.
@@ -33,5 +33,5 @@ index f04eb9199024..035381b4c63f 100644
  }
  
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

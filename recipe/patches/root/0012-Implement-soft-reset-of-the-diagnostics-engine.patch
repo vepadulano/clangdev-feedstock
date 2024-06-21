@@ -1,7 +1,7 @@
 From 67bfaea1e86d9abc2a05865ea1c0aaefae1e3f89 Mon Sep 17 00:00:00 2001
 From: Vassil Vassilev <vvasilev@cern.ch>
 Date: Thu, 27 Mar 2014 11:26:03 +0100
-Subject: [PATCH 12/74] Implement soft reset of the diagnostics engine.
+Subject: [PATCH 12/75] Implement soft reset of the diagnostics engine.
 
 ---
  clang/include/clang/Basic/Diagnostic.h | 6 +++---
@@ -55,5 +55,5 @@ index d3b2122e9c59..ce9a345c4b90 100644
  
  void DiagnosticsEngine::SetDelayedDiagnostic(unsigned DiagID, StringRef Arg1,
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

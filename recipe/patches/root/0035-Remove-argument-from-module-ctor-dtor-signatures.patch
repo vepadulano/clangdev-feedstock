@@ -1,7 +1,7 @@
 From 72dd7982fa67a26190b5bdf8afa65d5087196f41 Mon Sep 17 00:00:00 2001
 From: Jonas Hahnfeld <jonas.hahnfeld@cern.ch>
 Date: Fri, 8 Apr 2022 11:31:30 +0200
-Subject: [PATCH 35/74] Remove argument from module ctor/dtor signatures
+Subject: [PATCH 35/75] Remove argument from module ctor/dtor signatures
 
 This works around a bug + missing support in ORC for constructors with
 non-void signatures (https://github.com/llvm/llvm-project/issues/54797).
@@ -33,5 +33,5 @@ index 88030fee501b..5905d57e47a4 100644
        addUnderscoredPrefixToName("_module_dtor"), &TheModule);
  
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 

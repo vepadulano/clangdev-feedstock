@@ -1,7 +1,7 @@
 From d27ff10e4dd2228a5b9c6ccfdbaad1513dd45b20 Mon Sep 17 00:00:00 2001
 From: Axel Naumann <Axel.Naumann@cern.ch>
 Date: Wed, 6 Apr 2016 14:31:51 +0200
-Subject: [PATCH 07/74] Cleanup cached constant (.str) from codegen.
+Subject: [PATCH 07/75] Cleanup cached constant (.str) from codegen.
 
 ---
  clang/include/clang/CodeGen/ModuleBuilder.h |  3 +++
@@ -62,5 +62,5 @@ index 74c046643f28..a7cde625adc3 100644
      DiagnosticsEngine &Diags, llvm::StringRef ModuleName,
      const HeaderSearchOptions &HeaderSearchOpts,
 -- 
-2.42.0
+2.39.3 (Apple Git-145)
 
